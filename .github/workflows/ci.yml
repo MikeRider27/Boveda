@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Tests unitarios (etapa test del Dockerfile)
+        run: docker build --target test .
+      - name: Auditoría de dependencias
+        run: docker run --rm -v "$PWD:/app" -w /app node:24-alpine npm audit --omit=dev --audit-level=high
+
+  smoke:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Levantar stack completo
+        run: |
+          echo "POSTGRES_PASSWORD=ci-$(openssl rand -hex 12)" > .env
+          docker compose up -d --build --wait
+      - name: Smoke test
+        run: |
+          curl -fsS http://127.0.0.1:3000/readyz
+          code=$(curl -s -o /dev/null -w '%{http_code}' -c jar -H 'X-Requested-With: boveda' -H 'Content-Type: application/json' \
+            -d '{"email":"ci@example.com","password":"ci-password-123"}' http://127.0.0.1:3000/api/auth/register)
+          test "$code" = 201
+          curl -fsS -b jar -H 'X-Requested-With: boveda' -H 'Content-Type: application/json' \
+            -d '{"title":"CI","body":"[[Otra]] #ci"}' http://127.0.0.1:3000/api/notes
+          curl -fsS -b jar http://127.0.0.1:3000/api/tags | grep -q '"ci"'
+      - name: Logs si falla
+        if: failure()
+        run: docker compose logs
+
+  publish:
+    needs: smoke
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+            ghcr.io/${{ github.repository }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

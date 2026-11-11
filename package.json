@@ -1,0 +1,21 @@
+{
+  "name": "boveda",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Notas enlazadas autoalojadas: wikilinks, backlinks, tags, búsqueda y grafo.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "dompurify": "^3.2.6",
+    "express": "^5.1.0",
+    "helmet": "^8.1.0",
+    "marked": "^16.0.0",
+    "pg": "^8.16.0"
+  }
+}

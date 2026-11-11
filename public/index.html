@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <title>Bóveda</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2 4 9v14l12 7 12-7V9z' fill='%238b6cf6'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/css/app.css">
+  <script type="module" src="/js/app.js"></script>
+</head>
+<body>
+  <!-- Pantalla de acceso -->
+  <main id="auth-view" class="auth" hidden>
+    <form id="auth-form" class="auth-card" novalidate>
+      <div class="brand brand-lg"><span class="brand-mark" aria-hidden="true"></span>Bóveda</div>
+      <p class="muted">Tus notas enlazadas, en tu servidor.</p>
+      <div class="segmented" role="tablist" aria-label="Modo de acceso">
+        <button type="button" role="tab" id="tab-login" aria-selected="true" data-mode="login">Entrar</button>
+        <button type="button" role="tab" id="tab-register" aria-selected="false" data-mode="register">Crear cuenta</button>
+      </div>
+      <label>Email
+        <input name="email" type="email" autocomplete="email" required>
+      </label>
+      <label>Contraseña
+        <input name="password" type="password" autocomplete="current-password" minlength="10" required>
+      </label>
+      <p id="auth-hint" class="hint" hidden>Mínimo 10 caracteres.</p>
+      <p id="auth-error" class="error" role="alert"></p>
+      <button type="submit" class="btn btn-primary" id="auth-submit">Entrar</button>
+    </form>
+  </main>
+
+  <!-- Aplicación -->
+  <div id="app-view" class="layout" hidden>
+    <aside id="sidebar" class="sidebar" aria-label="Notas">
+      <div class="sidebar-head">
+        <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Bóveda</div>
+        <button id="btn-new" class="btn btn-primary btn-sm" title="Nueva nota (Alt+N)">+ Nueva</button>
+      </div>
+      <div class="search">
+        <input id="search" type="search" placeholder="Buscar…  (Ctrl+K)" aria-label="Buscar notas" autocomplete="off">
+      </div>
+      <div id="tag-filter" class="tag-filter" hidden>
+        <span>Filtrando por <strong id="tag-filter-name"></strong></span>
+        <button id="tag-filter-clear" class="link-btn">Quitar</button>
+      </div>
+      <nav id="note-list" class="note-list" aria-live="polite"></nav>
+      <button id="btn-more" class="btn btn-ghost btn-sm more" hidden>Cargar más</button>
+      <section class="tags-section">
+        <h2 class="section-title">Etiquetas</h2>
+        <div id="tag-cloud" class="tag-cloud"></div>
+      </section>
+      <div class="sidebar-foot">
+        <span id="user-email" class="muted truncate"></span>
+        <button id="btn-logout" class="link-btn">Salir</button>
+      </div>
+    </aside>
+    <div id="scrim" class="scrim" hidden></div>
+
+    <main class="main">
+      <header class="toolbar">
+        <button id="btn-menu" class="icon-btn only-mobile" aria-label="Abrir lista de notas" aria-controls="sidebar">☰</button>
+        <div class="segmented" role="group" aria-label="Modo de vista">
+          <button type="button" data-view="edit" aria-pressed="false">Editar</button>
+          <button type="button" data-view="split" aria-pressed="true">Dividido</button>
+          <button type="button" data-view="read" aria-pressed="false">Lectura</button>
+        </div>
+        <span id="save-status" class="save-status" role="status" aria-live="polite"></span>
+        <div class="toolbar-end">
+          <button id="btn-graph" class="btn btn-ghost btn-sm">Grafo</button>
+          <button id="btn-delete" class="btn btn-ghost btn-sm danger" disabled>Eliminar</button>
+        </div>
+      </header>
+
+      <div id="conflict-banner" class="banner" role="alert" hidden>
+        <span>Esta nota cambió en otra pestaña o dispositivo.</span>
+        <button id="btn-conflict-reload" class="btn btn-sm">Descartar mis cambios</button>
+        <button id="btn-conflict-overwrite" class="btn btn-sm btn-primary">Sobrescribir</button>
+      </div>
+
+      <section id="empty-state" class="empty">
+        <div class="empty-mark" aria-hidden="true"></div>
+        <h1>Empieza a escribir</h1>
+        <p class="muted">Crea una nota, enlaza otras con <code>[[Título]]</code> y etiquétalas con <code>#tema</code>.</p>
+        <button id="btn-new-empty" class="btn btn-primary">Crear la primera nota</button>
+      </section>
+
+      <section id="editor" class="editor view-split" hidden>
+        <input id="note-title" class="note-title" aria-label="Título" maxlength="200" spellcheck="false">
+        <p id="title-error" class="error" role="alert"></p>
+        <div class="panes">
+          <textarea id="note-body" class="note-body" aria-label="Contenido en Markdown"
+            placeholder="Escribe en Markdown. [[Enlaza]] notas y usa #etiquetas."></textarea>
+          <article id="preview" class="preview markdown" aria-label="Vista previa"></article>
+        </div>
+      </section>
+    </main>
+
+    <aside id="backlinks" class="backlinks" aria-label="Enlaces entrantes" hidden>
+      <h2 class="section-title">Enlaces entrantes</h2>
+      <ul id="backlink-list" class="backlink-list"></ul>
+    </aside>
+  </div>
+
+  <dialog id="graph-dialog" class="graph-dialog" aria-label="Grafo de notas">
+    <header>
+      <h2>Grafo</h2>
+      <span id="graph-info" class="muted"></span>
+      <button class="icon-btn" id="graph-close" aria-label="Cerrar">✕</button>
+    </header>
+    <canvas id="graph-canvas"></canvas>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>
